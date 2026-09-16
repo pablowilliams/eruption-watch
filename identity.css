@@ -1,12 +1,173 @@
-/* Eruption Watch: public-safety monitoring layout. */
-:root { --bg:#f4f1eb; --bg-elev-1:#fff; --bg-elev-2:#faf8f3; --bg-elev-3:#ece5da; --border:#d8cdbf; --border-strong:#9b8776; --text:#281e19; --text-muted:#6b5c52; --text-dim:#88786e; --accent:#a93d24; --accent-dim:#792c1b; --accent-bg:rgba(169,61,36,.1); --focus:#a93d24; --font-sans:"Space Grotesk",system-ui,sans-serif; --r:4px; }
-html,body { background:var(--bg); color:var(--text); overflow-x:hidden; }
-body::before,body::after,.ticker-tape-wrap,.term-strip { display:none!important; }
-.app { max-width:1460px; padding:24px 32px 56px; }
-.app-header { background:#30231d; color:#fff8ef; margin:-24px -32px 24px; padding:22px 32px; border:0; }
-.app-header h1,.app-header .subtitle,.header-meta { color:inherit; }
-.app-header h1 { font:700 19px/1.2 var(--font-sans); letter-spacing:.01em; text-transform:none; }
-.hero { background:#fff; border:0; border-top:5px solid var(--accent); box-shadow:0 8px 24px rgba(40,30,25,.08); }
-.hero-h { font-family:var(--font-sans); letter-spacing:-.04em; text-transform:none; }
-.section,.controls-block { background:#fff; border-color:var(--border); box-shadow:none; }
-.section h2,.section h3,.section h4 { color:var(--text); font-family:var(--font-sans); text-transform:none; letter-spacing:-.01em; }
+/* Eruption Watch — geologist's field brief and civil-safety bulletin. */
+:root {
+  --bg: #ded5c5;
+  --bg-elev-1: #f6f1e7;
+  --bg-elev-2: #ebe3d5;
+  --bg-elev-3: #dcd0bf;
+  --border: #c2b49f;
+  --border-strong: #715f4f;
+  --text: #2d241d;
+  --text-muted: #6b5c50;
+  --text-dim: #8a7b6d;
+  --accent: #b53e25;
+  --accent-dim: #7d2819;
+  --accent-bg: rgba(181, 62, 37, 0.1);
+  --warn: #da8c21;
+  --focus: #b53e25;
+  --font-sans: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "Space Mono", monospace;
+  --r: 0;
+}
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+body::before {
+  background:
+    radial-gradient(
+      ellipse at 90% 8%,
+      rgba(181, 62, 37, 0.08),
+      transparent 35%
+    ),
+    repeating-radial-gradient(
+      circle at 85% 24%,
+      transparent 0 34px,
+      rgba(45, 36, 29, 0.035) 35px 36px
+    );
+}
+.ticker-tape-wrap,
+.term-strip {
+  display: none !important;
+}
+.app {
+  max-width: 1500px;
+  padding: 0 36px 64px;
+}
+.app-header {
+  margin: 0 -36px 34px;
+  padding: 22px 36px;
+  color: #fff9ec;
+  background: #34271f;
+  border-bottom: 8px solid var(--accent);
+  align-items: center;
+}
+.app-header h1,
+.app-header .subtitle,
+.header-meta {
+  color: inherit;
+}
+.app-header h1 {
+  font: 800 18px/1.2 var(--font-sans);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.app-header h1::before {
+  content: "▲ ";
+  color: #e96342;
+}
+.header-meta {
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: #f6f1e7;
+  border: 1px solid var(--border-strong);
+  border-top: 0;
+  border-radius: 0;
+  box-shadow: 10px 12px 0 rgba(45, 36, 29, 0.08);
+}
+.hero::before {
+  content: "FIELD BULLETIN";
+  position: absolute;
+  right: -42px;
+  top: 30px;
+  padding: 7px 50px;
+  background: var(--accent);
+  color: white;
+  transform: rotate(45deg);
+  font: 800 9px var(--font-sans);
+  letter-spacing: 0.12em;
+}
+.hero-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.8fr);
+}
+.hero-h {
+  max-width: 800px;
+  font: 800 clamp(48px, 7vw, 98px)/0.86 var(--font-sans);
+  letter-spacing: -0.065em;
+  text-transform: none;
+}
+.hero-eyebrow {
+  color: var(--accent);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.hero-sub {
+  font: 600 18px/1.45 var(--font-sans);
+}
+.hero-art {
+  background: #33261f;
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(9% 0, 100% 0, 100% 100%, 0 100%);
+}
+.controls-block,
+.section {
+  background: #f6f1e7;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+.controls-block {
+  border-top: 7px solid var(--warn);
+}
+.section h2,
+.section h3,
+.section h4 {
+  color: var(--text);
+  font-family: var(--font-sans);
+  text-transform: none;
+  letter-spacing: -0.02em;
+}
+.kpi-card {
+  border-radius: 0;
+  border-top: 4px solid var(--border-strong);
+}
+.rail-box {
+  border-radius: 0;
+  border-left: 5px solid var(--accent);
+}
+.stocks th {
+  background: #3b2d24;
+  color: #fff9ec;
+}
+.btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.strategy-chip {
+  border-radius: 0;
+}
+@media (max-width: 760px) {
+  .app {
+    padding-inline: 16px;
+  }
+  .app-header {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-art {
+    clip-path: none;
+  }
+}

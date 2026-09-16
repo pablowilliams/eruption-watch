@@ -1,412 +1,957 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="color-scheme" content="dark" />
-<title>Eruption Watch — Active Volcano Risk Monitor</title>
-<meta name="description" content="Volcanic activity scenario monitor for active volcanoes with VEI eruption probability sims, hazard heat-matrix, and volcanology-community notes sentiment." />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=4" />
-<link rel="stylesheet" href="identity.css?v=4" />
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>Eruption Watch — Active Volcano Risk Monitor</title>
+    <meta
+      name="description"
+      content="Volcanic activity scenario monitor for active volcanoes with VEI eruption probability sims, hazard heat-matrix, and volcanology-community notes sentiment."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=5" />
+    <link rel="stylesheet" href="identity.css?v=5" />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
 
-<a href="#main" class="skip-link">Skip to main content</a>
+    <div class="app">
+      <!-- ===== Synthetic scenario tape ===== -->
+      <div
+        class="ticker-tape-wrap"
+        role="region"
+        aria-label="Synthetic volcano scenario tape"
+      >
+        <button
+          type="button"
+          id="tape-toggle"
+          class="tape-toggle"
+          aria-pressed="false"
+          aria-label="Pause scenario tape"
+        >
+          <span aria-hidden="true" class="tape-icon">❚❚</span
+          ><span class="tape-toggle-lbl">Pause</span>
+        </button>
+        <div class="ticker-tape-viewport">
+          <div class="ticker-tape" id="ticker-tape" aria-hidden="true"></div>
+        </div>
+        <div id="ticker-tape-sr" class="sr-only" aria-live="off"></div>
+      </div>
 
-<div class="app">
+      <!-- ===== Compact status strip ===== -->
+      <div class="term-strip" role="status" aria-label="Session status">
+        <span class="kv"
+          ><span class="brand-dot" aria-hidden="true"></span
+          ><span>VAT</span></span
+        >
+        <span class="kv"
+          ><span>WATCH</span> <span class="v" id="term-watch">10</span></span
+        >
+        <span
+          class="kv term-conn initializing"
+          id="term-conn"
+          aria-label="Scenario data status"
+        >
+          <span class="conn-shape" aria-hidden="true"></span>
+          <span id="term-conn-label">INIT</span>
+          <span class="v" id="term-conn-src">—</span>
+        </span>
+        <span class="kv" id="term-mkt-wrap"
+          ><span>MODE</span>
+          <span
+            class="v"
+            id="term-market"
+            title="Deterministic scenario engine status"
+            >—</span
+          ></span
+        >
+        <span class="kv"
+          ><span>HORIZON</span>
+          <span class="v" id="term-horizon">30D</span></span
+        >
+        <span class="kv"
+          ><span>PATHS</span> <span class="v" id="term-paths">1K</span></span
+        >
+        <span class="kv"
+          ><span>SEED</span> <span class="v" id="term-seed">42</span></span
+        >
+        <span class="kv"
+          ><span>LATENCY</span> <span class="v" id="term-latency">—</span></span
+        >
+        <span class="kv ok"
+          ><span>UPTIME</span>
+          <span class="v" id="term-uptime">00:00:00</span></span
+        >
+      </div>
 
-  <!-- ===== Synthetic scenario tape ===== -->
-  <div class="ticker-tape-wrap" role="region" aria-label="Synthetic volcano scenario tape">
-    <button type="button" id="tape-toggle" class="tape-toggle" aria-pressed="false" aria-label="Pause scenario tape"><span aria-hidden="true" class="tape-icon">❚❚</span><span class="tape-toggle-lbl">Pause</span></button>
-    <div class="ticker-tape-viewport">
-      <div class="ticker-tape" id="ticker-tape" aria-hidden="true"></div>
-    </div>
-    <div id="ticker-tape-sr" class="sr-only" aria-live="off"></div>
-  </div>
+      <!-- ===== Snapshot fallback notice ===== -->
+      <div id="feed-banner" class="feed-banner" role="status" hidden>
+        <span class="feed-banner-icon" aria-hidden="true">!</span>
+        <span class="feed-banner-text" id="feed-banner-text"
+          >Scenario snapshot unavailable — using embedded seed data.</span
+        >
+        <button type="button" id="feed-retry" class="feed-btn">Retry</button>
+        <button
+          type="button"
+          id="feed-dismiss"
+          class="feed-btn feed-btn-icon"
+          aria-label="Dismiss feed notice"
+        >
+          ×
+        </button>
+      </div>
 
-  <!-- ===== Compact status strip ===== -->
-  <div class="term-strip" role="status" aria-label="Session status">
-    <span class="kv"><span class="brand-dot" aria-hidden="true"></span><span>VAT</span></span>
-    <span class="kv"><span>WATCH</span> <span class="v" id="term-watch">10</span></span>
-    <span class="kv term-conn initializing" id="term-conn" aria-label="Scenario data status">
-      <span class="conn-shape" aria-hidden="true"></span>
-      <span id="term-conn-label">INIT</span>
-      <span class="v" id="term-conn-src">—</span>
-    </span>
-    <span class="kv" id="term-mkt-wrap"><span>MODE</span> <span class="v" id="term-market" title="Deterministic scenario engine status">—</span></span>
-    <span class="kv"><span>HORIZON</span> <span class="v" id="term-horizon">30D</span></span>
-    <span class="kv"><span>PATHS</span> <span class="v" id="term-paths">1K</span></span>
-    <span class="kv"><span>SEED</span> <span class="v" id="term-seed">42</span></span>
-    <span class="kv"><span>LATENCY</span> <span class="v" id="term-latency">—</span></span>
-    <span class="kv ok"><span>UPTIME</span> <span class="v" id="term-uptime">00:00:00</span></span>
-  </div>
+      <!-- Accessible snapshot-status region -->
+      <span
+        id="session-status"
+        class="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      ></span>
 
-  <!-- ===== Snapshot fallback notice ===== -->
-  <div id="feed-banner" class="feed-banner" role="status" hidden>
-    <span class="feed-banner-icon" aria-hidden="true">!</span>
-    <span class="feed-banner-text" id="feed-banner-text">Scenario snapshot unavailable — using embedded seed data.</span>
-    <button type="button" id="feed-retry" class="feed-btn">Retry</button>
-    <button type="button" id="feed-dismiss" class="feed-btn feed-btn-icon" aria-label="Dismiss feed notice">×</button>
-  </div>
-
-  <!-- Accessible snapshot-status region -->
-  <span id="session-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
-
-  <!-- ===== Header ===== -->
-  <header class="app-header" role="banner">
-    <div>
-      <h1>Eruption Watch </h1>
-      <p class="subtitle">A review workspace for comparing simplified activity scenarios.</p>
-    </div>
-    <div class="header-meta" aria-label="Data status">
-      <span><span class="live-dot" aria-hidden="true"></span>Scenario replay</span>
-      <span>Snapshot checked: <time id="last-update" datetime="">—</time></span>
-    </div>
-  </header>
-
-  <main id="main" role="main" aria-labelledby="dashboard-title" tabindex="-1">
-
-    <section class="hero" aria-labelledby="hero-heading">
-      <div class="hero-grid">
-        <div class="hero-text">
-          <p class="hero-eyebrow"><span class="hero-dot" aria-hidden="true"></span> Watch review · 12 volcanoes · Fixed observations</p>
-          <h2 id="hero-heading" class="hero-h">Eruption Watch</h2>
-          <p class="hero-sub">Review simplified seismic, thermal, and deformation scenarios across a fixed volcano watchlist.</p>
-          <p class="hero-abstract">This is a sensitivity exercise built around synthetic observations. It is not connected to monitoring agencies and must not be used as an alerting service.</p>
-          <p class="hero-actions">
-            <a class="hero-link" href="#dashboard-title" id="hero-skip">Go to scenario controls ↓</a>
-            <a class="hero-link" href="#methodology-section">Read methodology</a>
+      <!-- ===== Header ===== -->
+      <header class="app-header" role="banner">
+        <div>
+          <h1>Eruption Watch</h1>
+          <p class="subtitle">
+            A review workspace for comparing simplified activity scenarios.
           </p>
         </div>
-        <div class="hero-art" role="presentation" aria-hidden="true"><svg viewBox="0 0 320 240">
-        <path d="M0,220 L320,220 L320,235 L0,235 Z" fill="#1a2029"/>
-        <path d="M80,220 L155,90 L165,90 L240,220 Z" fill="#b36b1f" stroke="#ff9933" stroke-width="1"/>
-        <path d="M155,90 L150,70 L145,55 L150,40 L155,30 L165,32 L170,48 L175,62 L172,80 L165,90 Z" fill="#ff9933" fill-opacity="0.55"/>
-        <circle cx="160" cy="30" r="4" fill="#ff9933" fill-opacity="0.4"/><circle cx="185.2441295442369" cy="26" r="5" fill="#ff9933" fill-opacity="0.36000000000000004"/><circle cx="187.27892280477045" cy="22" r="6" fill="#ff9933" fill-opacity="0.32"/><circle cx="164.233600241796" cy="18" r="7" fill="#ff9933" fill-opacity="0.28"/><circle cx="137.29592514076217" cy="14" r="8" fill="#ff9933" fill-opacity="0.24000000000000002"/><circle cx="131.23227176010585" cy="10" r="9" fill="#ff9933" fill-opacity="0.2"/><circle cx="151.61753505403223" cy="6" r="10" fill="#ff9933" fill-opacity="0.16000000000000003"/><circle cx="179.70959796156367" cy="2" r="11" fill="#ff9933" fill-opacity="0.12"/>
-        <text x="160" y="232" fill="#ff9933" font-size="9" font-family="JetBrains Mono, monospace" text-anchor="middle" opacity="0.6">// VEI plume modeling</text>
-      </svg></div>
-      </div>
-    </section>
-    <h2 id="dashboard-title" class="sr-only" tabindex="-1">Volcano dashboard</h2>
-
-    <!-- ===== Scenario controls ===== -->
-    <section class="controls-block" aria-labelledby="controls-heading">
-      <h2 id="controls-heading" class="sr-only">Strategy and simulation controls</h2>
-
-      <div class="strategy-bar">
-        <fieldset class="strategy-fieldset">
-          <legend>Forecasting strategies <span class="legend-hint">pick one or more — signals combine</span></legend>
-          <div class="strategy-options" id="strategy-options"></div>
-        </fieldset>
-      </div>
-
-      <div class="controls-row">
-        <div class="field">
-          <label for="ticker-select">Focus volcano</label>
-          <select id="ticker-select" aria-describedby="ticker-help"></select>
-          <span id="ticker-help" class="sr-only">Select a volcano to drill into.</span>
+        <div class="header-meta" aria-label="Data status">
+          <span
+            ><span class="live-dot" aria-hidden="true"></span>Scenario
+            replay</span
+          >
+          <span
+            >Snapshot checked: <time id="last-update" datetime="">—</time></span
+          >
         </div>
-        <div class="field">
-          <label for="sims-range">Simulations <span id="sims-value" class="range-value" aria-hidden="true">1000</span></label>
-          <div class="range-row">
-            <input type="range" id="sims-range" min="100" max="10000" step="100" value="1000" aria-valuetext="1000 simulation paths" />
-          </div>
-        </div>
-        <div class="field">
-          <label for="horizon-select">Horizon</label>
-          <select id="horizon-select">
-            <option value="5">5 forecast steps</option>
-            <option value="30" selected>30 forecast steps</option>
-            <option value="90">90 forecast steps</option>
-            <option value="252">252 forecast steps</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="seed-input">Random seed</label>
-          <select id="seed-input">
-            <option value="42" selected>42 (deterministic)</option>
-            <option value="1337">1337</option>
-            <option value="2025">2025</option>
-            <option value="random">random</option>
-          </select>
-        </div>
-        <button type="button" id="run-btn" class="btn">Run Sim</button>
-      </div>
+      </header>
 
-      <span id="live-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
-      <p id="status-line" class="status-line" aria-hidden="true">Ready. Choose observation inputs, then run the scenario.</p>
-    </section>
-
-    <!-- ===== Main grid: content + right rail ===== -->
-    <div class="main-grid">
-
-      <div class="main-col">
-
-        <!-- ===== Summary metrics ===== -->
-        <section aria-labelledby="perf-heading">
-          <div class="section-header tight">
-            <h2 id="perf-heading">Activity overview</h2>
-            <span class="subtext">All monitored volcanoes</span>
-          </div>
-          <div class="kpi-strip" id="kpi-strip"></div>
-        </section>
-
-        <!-- ===== Sector heatmap ===== -->
-        <section aria-labelledby="heatmap-heading" class="heatmap-section">
-          <div class="section-header tight">
-            <h2 id="heatmap-heading">Watchlist heatmap</h2>
-            <span class="subtext">Colour = latest activity change · size = relative activity index</span>
-          </div>
-          <div class="heatmap" id="heatmap" role="list" aria-label="Scenario comparison by latest synthetic change"></div>
-        </section>
-
-        <!-- ===== Volcano watchlist ===== -->
-        <section class="section" aria-labelledby="stocks-heading">
-          <div class="section-header">
-            <div>
-              <h2 id="stocks-heading">Volcano watchlist</h2>
-              <p class="subtext">The fixed locations used in this study. Review status combines the selected indicators; choose a row for detail.</p>
+      <main
+        id="main"
+        role="main"
+        aria-labelledby="dashboard-title"
+        tabindex="-1"
+      >
+        <section class="hero" aria-labelledby="hero-heading">
+          <div class="hero-grid">
+            <div class="hero-text">
+              <p class="hero-eyebrow">
+                <span class="hero-dot" aria-hidden="true"></span> Watch review ·
+                12 volcanoes · Fixed observations
+              </p>
+              <h2 id="hero-heading" class="hero-h">Eruption Watch</h2>
+              <p class="hero-sub">
+                Review simplified seismic, thermal, and deformation scenarios
+                across a fixed volcano watchlist.
+              </p>
+              <p class="hero-abstract">
+                This is a sensitivity exercise built around synthetic
+                observations. It is not connected to monitoring agencies and
+                must not be used as an alerting service.
+              </p>
+              <p class="hero-actions">
+                <a class="hero-link" href="#dashboard-title" id="hero-skip"
+                  >Go to scenario controls ↓</a
+                >
+                <a class="hero-link" href="#methodology-section"
+                  >Read methodology</a
+                >
+              </p>
             </div>
-            <span id="aggregate-signal" aria-live="polite"></span>
+            <div class="hero-art" role="presentation" aria-hidden="true">
+              <svg viewBox="0 0 320 240">
+                <path d="M0,220 L320,220 L320,235 L0,235 Z" fill="#1a2029" />
+                <path
+                  d="M80,220 L155,90 L165,90 L240,220 Z"
+                  fill="#b36b1f"
+                  stroke="#ff9933"
+                  stroke-width="1"
+                />
+                <path
+                  d="M155,90 L150,70 L145,55 L150,40 L155,30 L165,32 L170,48 L175,62 L172,80 L165,90 Z"
+                  fill="#ff9933"
+                  fill-opacity="0.55"
+                />
+                <circle
+                  cx="160"
+                  cy="30"
+                  r="4"
+                  fill="#ff9933"
+                  fill-opacity="0.4"
+                />
+                <circle
+                  cx="185.2441295442369"
+                  cy="26"
+                  r="5"
+                  fill="#ff9933"
+                  fill-opacity="0.36000000000000004"
+                />
+                <circle
+                  cx="187.27892280477045"
+                  cy="22"
+                  r="6"
+                  fill="#ff9933"
+                  fill-opacity="0.32"
+                />
+                <circle
+                  cx="164.233600241796"
+                  cy="18"
+                  r="7"
+                  fill="#ff9933"
+                  fill-opacity="0.28"
+                />
+                <circle
+                  cx="137.29592514076217"
+                  cy="14"
+                  r="8"
+                  fill="#ff9933"
+                  fill-opacity="0.24000000000000002"
+                />
+                <circle
+                  cx="131.23227176010585"
+                  cy="10"
+                  r="9"
+                  fill="#ff9933"
+                  fill-opacity="0.2"
+                />
+                <circle
+                  cx="151.61753505403223"
+                  cy="6"
+                  r="10"
+                  fill="#ff9933"
+                  fill-opacity="0.16000000000000003"
+                />
+                <circle
+                  cx="179.70959796156367"
+                  cy="2"
+                  r="11"
+                  fill="#ff9933"
+                  fill-opacity="0.12"
+                />
+                <text
+                  x="160"
+                  y="232"
+                  fill="#ff9933"
+                  font-size="9"
+                  font-family="JetBrains Mono, monospace"
+                  text-anchor="middle"
+                  opacity="0.6"
+                >
+                  // VEI plume modeling
+                </text>
+              </svg>
+            </div>
           </div>
-          <div class="table-wrap">
-            <table class="stocks" id="stocks-table">
-              <caption class="sr-only">Synthetic volcano activity catalogue with latest changes, scenario summaries, note balance, and review status.</caption>
-              <thead>
-                <tr>
-                  <th scope="col" aria-sort="none"><button type="button" data-sort="ticker">Volcano <span class="sort-ind" aria-hidden="true">⇅</span></button></th>
-                  <th scope="col">Location · Type</th>
-                  <th scope="col" class="spark-col">60D</th>
-                  <th scope="col" class="num" aria-sort="none"><button type="button" data-sort="price">Activity <span class="sort-ind" aria-hidden="true">⇅</span></button></th>
-                  <th scope="col" class="num" aria-sort="none"><button type="button" data-sort="change">Δ Activity <span class="sort-ind" aria-hidden="true">⇅</span></button></th>
-                  <th scope="col" class="num" aria-sort="none"><button type="button" data-sort="expRet">Scenario mean <span class="sort-ind" aria-hidden="true">⇅</span></button></th>
-                  <th scope="col" class="num">95% CI</th>
-                  <th scope="col" class="num" aria-sort="none"><button type="button" data-sort="sentiment">Notes</button></th>
-                  <th scope="col">Balance</th>
-                  <th scope="col">Agreement</th>
-                  <th scope="col">Review</th>
-                </tr>
-              </thead>
-              <tbody id="stocks-body"></tbody>
-            </table>
+        </section>
+        <h2 id="dashboard-title" class="sr-only" tabindex="-1">
+          Volcano dashboard
+        </h2>
+
+        <!-- ===== Scenario controls ===== -->
+        <section class="controls-block" aria-labelledby="controls-heading">
+          <h2 id="controls-heading" class="sr-only">
+            Strategy and simulation controls
+          </h2>
+
+          <div class="strategy-bar">
+            <fieldset class="strategy-fieldset">
+              <legend>
+                Forecasting strategies
+                <span class="legend-hint"
+                  >pick one or more — signals combine</span
+                >
+              </legend>
+              <div class="strategy-options" id="strategy-options"></div>
+            </fieldset>
           </div>
-          <p class="table-help subtext" id="table-help">Choose a row, or press Enter from the keyboard, to inspect a volcano.</p>
+
+          <div class="controls-row">
+            <div class="field">
+              <label for="ticker-select">Focus volcano</label>
+              <select
+                id="ticker-select"
+                aria-describedby="ticker-help"
+              ></select>
+              <span id="ticker-help" class="sr-only"
+                >Select a volcano to drill into.</span
+              >
+            </div>
+            <div class="field">
+              <label for="sims-range"
+                >Simulations
+                <span id="sims-value" class="range-value" aria-hidden="true"
+                  >1000</span
+                ></label
+              >
+              <div class="range-row">
+                <input
+                  type="range"
+                  id="sims-range"
+                  min="100"
+                  max="10000"
+                  step="100"
+                  value="1000"
+                  aria-valuetext="1000 simulation paths"
+                />
+              </div>
+            </div>
+            <div class="field">
+              <label for="horizon-select">Horizon</label>
+              <select id="horizon-select">
+                <option value="5">5 forecast steps</option>
+                <option value="30" selected>30 forecast steps</option>
+                <option value="90">90 forecast steps</option>
+                <option value="252">252 forecast steps</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="seed-input">Random seed</label>
+              <select id="seed-input">
+                <option value="42" selected>42 (deterministic)</option>
+                <option value="1337">1337</option>
+                <option value="2025">2025</option>
+                <option value="random">random</option>
+              </select>
+            </div>
+            <button type="button" id="run-btn" class="btn">Run Sim</button>
+          </div>
+
+          <span
+            id="live-status"
+            class="sr-only"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          ></span>
+          <p id="status-line" class="status-line" aria-hidden="true">
+            Ready. Choose observation inputs, then run the scenario.
+          </p>
         </section>
 
-        <!-- ===== Detail for selected item ===== -->
-        <section class="section" aria-labelledby="detail-heading" id="detail-section">
-          <div class="section-header">
-            <div>
-              <h2 id="detail-heading">Location detail · <span id="detail-ticker">—</span> <span id="detail-name" class="subtext"></span></h2>
-              <p class="subtext" id="detail-subtitle">Click a row in the table above to drill into a specific volcano.</p>
-            </div>
-            <span id="detail-signal" aria-live="polite"></span>
-          </div>
+        <!-- ===== Main grid: content + right rail ===== -->
+        <div class="main-grid">
+          <div class="main-col">
+            <!-- ===== Summary metrics ===== -->
+            <section aria-labelledby="perf-heading">
+              <div class="section-header tight">
+                <h2 id="perf-heading">Activity overview</h2>
+                <span class="subtext">All monitored volcanoes</span>
+              </div>
+              <div class="kpi-strip" id="kpi-strip"></div>
+            </section>
 
-          <div class="grid-2">
-            <figure class="chart-wrap" aria-labelledby="mc-heading">
-              <span class="chart-crt-layer" aria-hidden="true"></span>
-              <h3 id="mc-heading">Seeded scenario paths</h3>
-              <div id="mc-chart" role="img" aria-label="Loading chart" tabindex="0" aria-describedby="mc-crosshair-help"></div>
-              <p id="mc-crosshair-help" class="sr-only">Use left and right arrow keys to move the crosshair across forecast steps; press Home or End to jump to first or last day.</p>
-              <div id="mc-crosshair-sr" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-              <figcaption id="mc-caption">Run the model to see reproducible scenario paths.</figcaption>
-              <table class="sr-only" id="mc-data-table" aria-label="Seeded scenario summary statistics">
-                <caption>Simulation summary</caption>
-                <thead><tr><th scope="col">Statistic</th><th scope="col">Value</th></tr></thead>
-                <tbody id="mc-data-body"></tbody>
-              </table>
-            </figure>
+            <!-- ===== Sector heatmap ===== -->
+            <section aria-labelledby="heatmap-heading" class="heatmap-section">
+              <div class="section-header tight">
+                <h2 id="heatmap-heading">Watchlist heatmap</h2>
+                <span class="subtext"
+                  >Colour = latest activity change · size = relative activity
+                  index</span
+                >
+              </div>
+              <div
+                class="heatmap"
+                id="heatmap"
+                role="list"
+                aria-label="Scenario comparison by latest synthetic change"
+              ></div>
+            </section>
 
-            <div class="sentiment-wrap" aria-labelledby="sentiment-heading">
-              <h3 id="sentiment-heading">Field notes</h3>
+            <!-- ===== Volcano watchlist ===== -->
+            <section class="section" aria-labelledby="stocks-heading">
+              <div class="section-header">
+                <div>
+                  <h2 id="stocks-heading">Volcano watchlist</h2>
+                  <p class="subtext">
+                    The fixed locations used in this study. Review status
+                    combines the selected indicators; choose a row for detail.
+                  </p>
+                </div>
+                <span id="aggregate-signal" aria-live="polite"></span>
+              </div>
+              <div class="table-wrap">
+                <table class="stocks" id="stocks-table">
+                  <caption class="sr-only">
+                    Synthetic volcano activity catalogue with latest changes,
+                    scenario summaries, note balance, and review status.
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" aria-sort="none">
+                        <button type="button" data-sort="ticker">
+                          Volcano
+                          <span class="sort-ind" aria-hidden="true">⇅</span>
+                        </button>
+                      </th>
+                      <th scope="col">Location · Type</th>
+                      <th scope="col" class="spark-col">60D</th>
+                      <th scope="col" class="num" aria-sort="none">
+                        <button type="button" data-sort="price">
+                          Activity
+                          <span class="sort-ind" aria-hidden="true">⇅</span>
+                        </button>
+                      </th>
+                      <th scope="col" class="num" aria-sort="none">
+                        <button type="button" data-sort="change">
+                          Δ Activity
+                          <span class="sort-ind" aria-hidden="true">⇅</span>
+                        </button>
+                      </th>
+                      <th scope="col" class="num" aria-sort="none">
+                        <button type="button" data-sort="expRet">
+                          Scenario mean
+                          <span class="sort-ind" aria-hidden="true">⇅</span>
+                        </button>
+                      </th>
+                      <th scope="col" class="num">95% CI</th>
+                      <th scope="col" class="num" aria-sort="none">
+                        <button type="button" data-sort="sentiment">
+                          Notes
+                        </button>
+                      </th>
+                      <th scope="col">Balance</th>
+                      <th scope="col">Agreement</th>
+                      <th scope="col">Review</th>
+                    </tr>
+                  </thead>
+                  <tbody id="stocks-body"></tbody>
+                </table>
+              </div>
+              <p class="table-help subtext" id="table-help">
+                Choose a row, or press Enter from the keyboard, to inspect a
+                volcano.
+              </p>
+            </section>
 
-              <div class="sentiment-bars" role="img" aria-label="Sentiment distribution" id="sentiment-bars-wrap">
-                <div class="sentiment-bar-pos" id="sent-bar-pos" style="width: 0%"></div>
-                <div class="sentiment-bar-neu" id="sent-bar-neu" style="width: 0%"></div>
-                <div class="sentiment-bar-neg" id="sent-bar-neg" style="width: 0%"></div>
+            <!-- ===== Detail for selected item ===== -->
+            <section
+              class="section"
+              aria-labelledby="detail-heading"
+              id="detail-section"
+            >
+              <div class="section-header">
+                <div>
+                  <h2 id="detail-heading">
+                    Location detail · <span id="detail-ticker">—</span>
+                    <span id="detail-name" class="subtext"></span>
+                  </h2>
+                  <p class="subtext" id="detail-subtitle">
+                    Click a row in the table above to drill into a specific
+                    volcano.
+                  </p>
+                </div>
+                <span id="detail-signal" aria-live="polite"></span>
               </div>
 
-              <div class="sentiment-stats" aria-label="Sentiment breakdown">
-                <div class="sentiment-stat">
-                  <div class="sentiment-stat-label" id="sent-pos-lbl">Positive</div>
-                  <div class="sentiment-stat-value delta-up" id="sent-pos-val" aria-labelledby="sent-pos-lbl">—</div>
-                </div>
-                <div class="sentiment-stat">
-                  <div class="sentiment-stat-label" id="sent-neu-lbl">Neutral</div>
-                  <div class="sentiment-stat-value" id="sent-neu-val" aria-labelledby="sent-neu-lbl">—</div>
-                </div>
-                <div class="sentiment-stat">
-                  <div class="sentiment-stat-label" id="sent-neg-lbl">Negative</div>
-                  <div class="sentiment-stat-value delta-down" id="sent-neg-val" aria-labelledby="sent-neg-lbl">—</div>
+              <div class="grid-2">
+                <figure class="chart-wrap" aria-labelledby="mc-heading">
+                  <span class="chart-crt-layer" aria-hidden="true"></span>
+                  <h3 id="mc-heading">Seeded scenario paths</h3>
+                  <div
+                    id="mc-chart"
+                    role="img"
+                    aria-label="Loading chart"
+                    tabindex="0"
+                    aria-describedby="mc-crosshair-help"
+                  ></div>
+                  <p id="mc-crosshair-help" class="sr-only">
+                    Use left and right arrow keys to move the crosshair across
+                    forecast steps; press Home or End to jump to first or last
+                    day.
+                  </p>
+                  <div
+                    id="mc-crosshair-sr"
+                    class="sr-only"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  ></div>
+                  <figcaption id="mc-caption">
+                    Run the model to see reproducible scenario paths.
+                  </figcaption>
+                  <table
+                    class="sr-only"
+                    id="mc-data-table"
+                    aria-label="Seeded scenario summary statistics"
+                  >
+                    <caption>
+                      Simulation summary
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Statistic</th>
+                        <th scope="col">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody id="mc-data-body"></tbody>
+                  </table>
+                </figure>
+
+                <div class="sentiment-wrap" aria-labelledby="sentiment-heading">
+                  <h3 id="sentiment-heading">Field notes</h3>
+
+                  <div
+                    class="sentiment-bars"
+                    role="img"
+                    aria-label="Sentiment distribution"
+                    id="sentiment-bars-wrap"
+                  >
+                    <div
+                      class="sentiment-bar-pos"
+                      id="sent-bar-pos"
+                      style="width: 0%"
+                    ></div>
+                    <div
+                      class="sentiment-bar-neu"
+                      id="sent-bar-neu"
+                      style="width: 0%"
+                    ></div>
+                    <div
+                      class="sentiment-bar-neg"
+                      id="sent-bar-neg"
+                      style="width: 0%"
+                    ></div>
+                  </div>
+
+                  <div class="sentiment-stats" aria-label="Sentiment breakdown">
+                    <div class="sentiment-stat">
+                      <div class="sentiment-stat-label" id="sent-pos-lbl">
+                        Positive
+                      </div>
+                      <div
+                        class="sentiment-stat-value delta-up"
+                        id="sent-pos-val"
+                        aria-labelledby="sent-pos-lbl"
+                      >
+                        —
+                      </div>
+                    </div>
+                    <div class="sentiment-stat">
+                      <div class="sentiment-stat-label" id="sent-neu-lbl">
+                        Neutral
+                      </div>
+                      <div
+                        class="sentiment-stat-value"
+                        id="sent-neu-val"
+                        aria-labelledby="sent-neu-lbl"
+                      >
+                        —
+                      </div>
+                    </div>
+                    <div class="sentiment-stat">
+                      <div class="sentiment-stat-label" id="sent-neg-lbl">
+                        Negative
+                      </div>
+                      <div
+                        class="sentiment-stat-value delta-down"
+                        id="sent-neg-val"
+                        aria-labelledby="sent-neg-lbl"
+                      >
+                        —
+                      </div>
+                    </div>
+                  </div>
+
+                  <h4 id="recent-posts">Recent posts</h4>
+                  <ul
+                    class="posts"
+                    id="post-list"
+                    aria-labelledby="recent-posts"
+                  ></ul>
                 </div>
               </div>
 
-              <h4 id="recent-posts">Recent posts</h4>
-              <ul class="posts" id="post-list" aria-labelledby="recent-posts"></ul>
+              <div>
+                <h3 id="strategy-breakdown-heading">
+                  Indicator breakdown · <span id="detail-ticker-2">—</span>
+                </h3>
+                <div
+                  class="strategy-grid"
+                  id="strategy-grid"
+                  aria-labelledby="strategy-breakdown-heading"
+                ></div>
+              </div>
+            </section>
+
+            <!-- ===== Summary ===== -->
+            <section class="section" aria-labelledby="summary-heading">
+              <div class="section-header">
+                <div>
+                  <h2 id="summary-heading">Volcano list // summary</h2>
+                  <p class="subtext" id="summary-subtitle">
+                    Narrative overview of every volcano with combined signal and
+                    sentiment.
+                  </p>
+                </div>
+                <span id="summary-signal"></span>
+              </div>
+              <div class="summary-grid" id="summary-grid"></div>
+            </section>
+          </div>
+
+          <!-- ===== Right rail ===== -->
+          <aside class="side-rail" aria-label="Key session metrics">
+            <div class="rail-box" id="rail-winrate">
+              <p class="rail-box-label">Higher-activity share</p>
+              <p class="rail-box-value up" id="rail-winrate-val">—</p>
+              <p class="rail-box-sub" id="rail-winrate-sub">
+                Final index above start
+              </p>
             </div>
-          </div>
-
-          <div>
-            <h3 id="strategy-breakdown-heading">Indicator breakdown · <span id="detail-ticker-2">—</span></h3>
-            <div class="strategy-grid" id="strategy-grid" aria-labelledby="strategy-breakdown-heading"></div>
-          </div>
-        </section>
-
-        <!-- ===== Summary ===== -->
-        <section class="section" aria-labelledby="summary-heading">
+            <div class="rail-box gauge-box" id="rail-stability">
+              <p class="rail-box-label">Stability ratio</p>
+              <div
+                class="gauge-wrap"
+                id="gauge-stability"
+                role="img"
+                aria-label="Stability ratio gauge"
+              >
+                <svg class="gauge" viewBox="0 0 120 68" aria-hidden="true">
+                  <path class="gauge-track" d="M10,60 A50,50 0 0,1 110,60" />
+                  <path
+                    class="gauge-fill"
+                    id="gauge-stability-arc"
+                    d="M10,60 A50,50 0 0,1 110,60"
+                  />
+                  <line
+                    class="gauge-needle"
+                    id="gauge-stability-needle"
+                    x1="60"
+                    y1="60"
+                    x2="60"
+                    y2="16"
+                  />
+                  <circle class="gauge-hub" cx="60" cy="60" r="4" />
+                  <line
+                    class="gauge-tick"
+                    x1="60"
+                    y1="14"
+                    x2="60"
+                    y2="10"
+                    stroke-width="2"
+                  />
+                </svg>
+              </div>
+              <p class="rail-box-value" id="rail-stability-val">—</p>
+              <p class="rail-box-sub" id="rail-stability-sub">
+                Normalised dispersion
+              </p>
+            </div>
+            <div class="rail-box" id="rail-er">
+              <p class="rail-box-label">Mean activity drift</p>
+              <p class="rail-box-value" id="rail-er-val">—</p>
+              <p class="rail-box-sub" id="rail-er-sub">Watchlist · 30d</p>
+            </div>
+            <div class="rail-box down gauge-box" id="rail-lower">
+              <p class="rail-box-label">Lower activity bound</p>
+              <div
+                class="gauge-wrap"
+                id="gauge-lower"
+                role="img"
+                aria-label="Lower-tail scenario gauge"
+              >
+                <svg class="gauge" viewBox="0 0 120 68" aria-hidden="true">
+                  <path class="gauge-track" d="M10,60 A50,50 0 0,1 110,60" />
+                  <path
+                    class="gauge-fill danger"
+                    id="gauge-lower-arc"
+                    d="M10,60 A50,50 0 0,1 110,60"
+                  />
+                  <line
+                    class="gauge-needle danger"
+                    id="gauge-lower-needle"
+                    x1="60"
+                    y1="60"
+                    x2="60"
+                    y2="16"
+                  />
+                  <circle class="gauge-hub" cx="60" cy="60" r="4" />
+                  <line
+                    class="gauge-tick"
+                    x1="60"
+                    y1="14"
+                    x2="60"
+                    y2="10"
+                    stroke-width="2"
+                  />
+                </svg>
+              </div>
+              <p class="rail-box-value down" id="rail-lower-val">—</p>
+              <p class="rail-box-sub" id="rail-lower-sub">
+                5th-percentile outcome
+              </p>
+            </div>
+            <div class="rail-box" id="rail-sent">
+              <p class="rail-box-label">Note balance</p>
+              <p class="rail-box-value" id="rail-sent-val">—</p>
+              <p class="rail-box-sub">Note balance</p>
+            </div>
+            <div class="rail-box" id="rail-buys">
+              <p class="rail-box-label">Review split</p>
+              <p class="rail-box-value" id="rail-buys-val">—</p>
+              <p class="rail-box-sub" id="rail-buys-sub">Volcano list</p>
+            </div>
+          </aside>
+        </div>
+        <section
+          class="section extra-panel"
+          aria-labelledby="hazard-heading"
+          id="extra-section"
+        >
           <div class="section-header">
             <div>
-              <h2 id="summary-heading">Volcano list // summary</h2>
-              <p class="subtext" id="summary-subtitle">Narrative overview of every volcano with combined signal and sentiment.</p>
-            </div>
-            <span id="summary-signal"></span>
-          </div>
-          <div class="summary-grid" id="summary-grid"></div>
-        </section>
-
-      </div>
-
-      <!-- ===== Right rail ===== -->
-      <aside class="side-rail" aria-label="Key session metrics">
-        <div class="rail-box" id="rail-winrate">
-          <p class="rail-box-label">Higher-activity share</p>
-          <p class="rail-box-value up" id="rail-winrate-val">—</p>
-          <p class="rail-box-sub" id="rail-winrate-sub">Final index above start</p>
-        </div>
-        <div class="rail-box gauge-box" id="rail-stability">
-          <p class="rail-box-label">Stability ratio</p>
-          <div class="gauge-wrap" id="gauge-stability" role="img" aria-label="Stability ratio gauge">
-            <svg class="gauge" viewBox="0 0 120 68" aria-hidden="true">
-              <path class="gauge-track" d="M10,60 A50,50 0 0,1 110,60"/>
-              <path class="gauge-fill" id="gauge-stability-arc" d="M10,60 A50,50 0 0,1 110,60"/>
-              <line class="gauge-needle" id="gauge-stability-needle" x1="60" y1="60" x2="60" y2="16"/>
-              <circle class="gauge-hub" cx="60" cy="60" r="4"/>
-              <line class="gauge-tick" x1="60" y1="14" x2="60" y2="10" stroke-width="2"/>
-            </svg>
-          </div>
-          <p class="rail-box-value" id="rail-stability-val">—</p>
-          <p class="rail-box-sub" id="rail-stability-sub">Normalised dispersion</p>
-        </div>
-        <div class="rail-box" id="rail-er">
-          <p class="rail-box-label">Mean activity drift</p>
-          <p class="rail-box-value" id="rail-er-val">—</p>
-          <p class="rail-box-sub" id="rail-er-sub">Watchlist · 30d</p>
-        </div>
-        <div class="rail-box down gauge-box" id="rail-lower">
-          <p class="rail-box-label">Lower activity bound</p>
-          <div class="gauge-wrap" id="gauge-lower" role="img" aria-label="Lower-tail scenario gauge">
-            <svg class="gauge" viewBox="0 0 120 68" aria-hidden="true">
-              <path class="gauge-track" d="M10,60 A50,50 0 0,1 110,60"/>
-              <path class="gauge-fill danger" id="gauge-lower-arc" d="M10,60 A50,50 0 0,1 110,60"/>
-              <line class="gauge-needle danger" id="gauge-lower-needle" x1="60" y1="60" x2="60" y2="16"/>
-              <circle class="gauge-hub" cx="60" cy="60" r="4"/>
-              <line class="gauge-tick" x1="60" y1="14" x2="60" y2="10" stroke-width="2"/>
-            </svg>
-          </div>
-          <p class="rail-box-value down" id="rail-lower-val">—</p>
-          <p class="rail-box-sub" id="rail-lower-sub">5th-percentile outcome</p>
-        </div>
-        <div class="rail-box" id="rail-sent">
-          <p class="rail-box-label">Note balance</p>
-          <p class="rail-box-value" id="rail-sent-val">—</p>
-          <p class="rail-box-sub">Note balance</p>
-        </div>
-        <div class="rail-box" id="rail-buys">
-          <p class="rail-box-label">Review split</p>
-          <p class="rail-box-value" id="rail-buys-val">—</p>
-          <p class="rail-box-sub" id="rail-buys-sub">Volcano list</p>
-        </div>
-      </aside>
-
-    </div>
-        <section class="section extra-panel" aria-labelledby="hazard-heading" id="extra-section">
-          <div class="section-header">
-            <div>
-              <h2 id="hazard-heading">Hazard heat-matrix // VEI × thermal anomaly</h2>
-              <p class="subtext">Each cell is a volcano × thermal-bin pair. Color, glyph, and label all encode severity.</p>
+              <h2 id="hazard-heading">
+                Hazard heat-matrix // VEI × thermal anomaly
+              </h2>
+              <p class="subtext">
+                Each cell is a volcano × thermal-bin pair. Color, glyph, and
+                label all encode severity.
+              </p>
             </div>
             <span id="extra-meta" class="subtext"></span>
           </div>
-          <div id="extra-content" role="img" aria-label="Hazard heat-matrix"></div>
-          <table class="sr-only" id="extra-data-table"><caption>Hazard heat-matrix by volcano and thermal bin</caption><thead><tr><th scope="col">Volcano</th><th scope="col">Thermal bin</th><th scope="col">Severity</th></tr></thead><tbody id="extra-data-body"></tbody></table>
+          <div
+            id="extra-content"
+            role="img"
+            aria-label="Hazard heat-matrix"
+          ></div>
+          <table class="sr-only" id="extra-data-table">
+            <caption>
+              Hazard heat-matrix by volcano and thermal bin
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Volcano</th>
+                <th scope="col">Thermal bin</th>
+                <th scope="col">Severity</th>
+              </tr>
+            </thead>
+            <tbody id="extra-data-body"></tbody>
+          </table>
         </section>
-        <section class="section extra-panel" aria-labelledby="recur-heading" id="extra2-section">
+        <section
+          class="section extra-panel"
+          aria-labelledby="recur-heading"
+          id="extra2-section"
+        >
           <div class="section-header">
             <div>
               <h2 id="recur-heading">Synthetic recurrence intervals</h2>
-              <p class="subtext" id="extra2-subtitle">Illustrative inter-eruption intervals with a clustering curve. These values are generated for the interface and do not come from an observatory catalogue.</p>
+              <p class="subtext" id="extra2-subtitle">
+                Illustrative inter-eruption intervals with a clustering curve.
+                These values are generated for the interface and do not come
+                from an observatory catalogue.
+              </p>
             </div>
             <span id="extra2-meta" class="subtext"></span>
           </div>
-          <div id="extra2-content" role="img" aria-label="Eruption recurrence interval histogram"></div>
-          <table class="sr-only" id="extra2-data-table"><caption>Synthetic inter-eruption interval frequency</caption><thead><tr><th scope="col">Interval (yr)</th><th scope="col">Count</th><th scope="col">Clustering index</th></tr></thead><tbody id="extra2-data-body"></tbody></table>
+          <div
+            id="extra2-content"
+            role="img"
+            aria-label="Eruption recurrence interval histogram"
+          ></div>
+          <table class="sr-only" id="extra2-data-table">
+            <caption>
+              Synthetic inter-eruption interval frequency
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Interval (yr)</th>
+                <th scope="col">Count</th>
+                <th scope="col">Clustering index</th>
+              </tr>
+            </thead>
+            <tbody id="extra2-data-body"></tbody>
+          </table>
         </section>
-        <section class="section extra-panel" aria-labelledby="tornado-heading" id="extra3-section">
+        <section
+          class="section extra-panel"
+          aria-labelledby="tornado-heading"
+          id="extra3-section"
+        >
           <div class="section-header">
             <div>
-              <h2 id="tornado-heading">Sensitivity analysis // tornado chart</h2>
-              <p class="subtext" id="extra3-subtitle">Single-parameter sensitivity at the configured baseline. Each bar is the % change in the dashboard's primary forward statistic when the parameter is perturbed by the listed amount, holding all others constant. Bars sorted by absolute magnitude, largest impact first.</p>
+              <h2 id="tornado-heading">
+                Sensitivity analysis // tornado chart
+              </h2>
+              <p class="subtext" id="extra3-subtitle">
+                Single-parameter sensitivity at the configured baseline. Each
+                bar is the % change in the dashboard's primary forward statistic
+                when the parameter is perturbed by the listed amount, holding
+                all others constant. Bars sorted by absolute magnitude, largest
+                impact first.
+              </p>
             </div>
             <span id="extra3-meta" class="subtext"></span>
           </div>
-          <div id="extra3-content" role="img" aria-labelledby="tornado-heading" aria-describedby="extra3-subtitle"></div>
-          <table class="sr-only" id="extra3-data-table"><caption>Parameter sensitivities, sorted by absolute magnitude</caption><thead><tr><th scope="col">Parameter</th><th scope="col">Perturbation</th><th scope="col">Downside %</th><th scope="col">Upside %</th><th scope="col">Range</th></tr></thead><tbody id="extra3-data-body"></tbody></table>
+          <div
+            id="extra3-content"
+            role="img"
+            aria-labelledby="tornado-heading"
+            aria-describedby="extra3-subtitle"
+          ></div>
+          <table class="sr-only" id="extra3-data-table">
+            <caption>
+              Parameter sensitivities, sorted by absolute magnitude
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Parameter</th>
+                <th scope="col">Perturbation</th>
+                <th scope="col">Downside %</th>
+                <th scope="col">Upside %</th>
+                <th scope="col">Range</th>
+              </tr>
+            </thead>
+            <tbody id="extra3-data-body"></tbody>
+          </table>
         </section>
-        <section class="section extra-panel" aria-labelledby="grid-heading" id="extra4-section">
+        <section
+          class="section extra-panel"
+          aria-labelledby="grid-heading"
+          id="extra4-section"
+        >
           <div class="section-header">
             <div>
-              <h2 id="grid-heading">Parameter grid // n=α/β × τ (yr since last)</h2>
-              <p class="subtext" id="extra4-subtitle">2-D parameter-space heatmap: n=α/β on the x-axis, τ (yr since last) on the y-axis, color + glyph encoding the resulting Conditional P(eruption in next 12mo). Cells use the same severity glyph vocabulary as elsewhere in the dashboard for color-independent encoding.</p>
+              <h2 id="grid-heading">
+                Parameter grid // n=α/β × τ (yr since last)
+              </h2>
+              <p class="subtext" id="extra4-subtitle">
+                2-D parameter-space heatmap: n=α/β on the x-axis, τ (yr since
+                last) on the y-axis, color + glyph encoding the resulting
+                Conditional P(eruption in next 12mo). Cells use the same
+                severity glyph vocabulary as elsewhere in the dashboard for
+                color-independent encoding.
+              </p>
             </div>
             <span id="extra4-meta" class="subtext"></span>
           </div>
-          <div id="extra4-content" role="img" aria-labelledby="grid-heading" aria-describedby="extra4-subtitle"></div>
-          <table class="sr-only" id="extra4-data-table"><caption>Parameter-grid heatmap values</caption><thead><tr><th scope="col">n=α/β</th><th scope="col">τ (yr since last)</th><th scope="col">Outcome (Conditional P(eruption in next 12mo))</th></tr></thead><tbody id="extra4-data-body"></tbody></table>
+          <div
+            id="extra4-content"
+            role="img"
+            aria-labelledby="grid-heading"
+            aria-describedby="extra4-subtitle"
+          ></div>
+          <table class="sr-only" id="extra4-data-table">
+            <caption>
+              Parameter-grid heatmap values
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">n=α/β</th>
+                <th scope="col">τ (yr since last)</th>
+                <th scope="col">
+                  Outcome (Conditional P(eruption in next 12mo))
+                </th>
+              </tr>
+            </thead>
+            <tbody id="extra4-data-body"></tbody>
+          </table>
         </section>
-        <section class="section methodology" aria-labelledby="methodology-heading" id="methodology-section">
-          <div class="section-header"><div><h2 id="methodology-heading">How this review works</h2><p class="subtext">Calculation choices, reproducibility, and safety boundaries.</p></div><span class="subtext">Deterministic browser model</span></div>
+        <section
+          class="section methodology"
+          aria-labelledby="methodology-heading"
+          id="methodology-section"
+        >
+          <div class="section-header">
+            <div>
+              <h2 id="methodology-heading">How this review works</h2>
+              <p class="subtext">
+                Calculation choices, reproducibility, and safety boundaries.
+              </p>
+            </div>
+            <span class="subtext">Deterministic browser model</span>
+          </div>
           <article class="methodology-article">
             <h3>Calculation</h3>
-            <p>Each location has a synthetic activity index, drift, and dispersion. The browser generates seeded lognormal paths and derives comparison summaries. The hazard panels are deterministic sensitivity views, not eruption forecasts.</p>
+            <p>
+              Each location has a synthetic activity index, drift, and
+              dispersion. The browser generates seeded lognormal paths and
+              derives comparison summaries. The hazard panels are deterministic
+              sensitivity views, not eruption forecasts.
+            </p>
             <h3>Reproducibility</h3>
-            <p>The observation snapshot is committed with the source. The same location, controls, and seed produce the same result.</p>
+            <p>
+              The observation snapshot is committed with the source. The same
+              location, controls, and seed produce the same result.
+            </p>
             <h3>Limits</h3>
-            <ul><li>No observatory, satellite, seismic, gas, or civil-protection feed is connected.</li><li>The activity index has no operational alert-level meaning.</li><li>The model is not a Hawkes-process fit and has no demonstrated forecast skill.</li><li>Always use the responsible monitoring agency for current hazards.</li></ul>
+            <ul>
+              <li>
+                No observatory, satellite, seismic, gas, or civil-protection
+                feed is connected.
+              </li>
+              <li>
+                The activity index has no operational alert-level meaning.
+              </li>
+              <li>
+                The model is not a Hawkes-process fit and has no demonstrated
+                forecast skill.
+              </li>
+              <li>
+                Always use the responsible monitoring agency for current
+                hazards.
+              </li>
+            </ul>
             <h3>Source</h3>
-            <p>Review the <a href="https://github.com/pablowilliams/eruption-watch/blob/main/app.js" rel="noopener">browser implementation</a> and <a href="https://github.com/pablowilliams/eruption-watch/blob/main/data/quotes.json" rel="noopener">versioned input snapshot</a>.</p>
+            <p>
+              Review the
+              <a
+                href="https://github.com/pablowilliams/eruption-watch/blob/main/app.js"
+                rel="noopener"
+                >browser implementation</a
+              >
+              and
+              <a
+                href="https://github.com/pablowilliams/eruption-watch/blob/main/data/quotes.json"
+                rel="noopener"
+                >versioned input snapshot</a
+              >.
+            </p>
           </article>
         </section>
+      </main>
 
-  </main>
+      <!-- Particle effects layer -->
+      <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
 
-  <!-- Particle effects layer -->
-  <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
+      <!-- SVG gradient defs for sparklines -->
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        width="0"
+        height="0"
+        style="position: absolute"
+      >
+        <defs>
+          <linearGradient id="spark-grad-up" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#00ff88" stop-opacity="0.55" />
+            <stop offset="100%" stop-color="#00ff88" stop-opacity="0" />
+          </linearGradient>
+          <linearGradient id="spark-grad-down" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ff3366" stop-opacity="0.55" />
+            <stop offset="100%" stop-color="#ff3366" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+      </svg>
 
-  <!-- SVG gradient defs for sparklines -->
-  <svg aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute">
-    <defs>
-      <linearGradient id="spark-grad-up" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"  stop-color="#00ff88" stop-opacity="0.55"/>
-        <stop offset="100%" stop-color="#00ff88" stop-opacity="0"/>
-      </linearGradient>
-      <linearGradient id="spark-grad-down" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"  stop-color="#ff3366" stop-opacity="0.55"/>
-        <stop offset="100%" stop-color="#ff3366" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-  </svg>
+      <footer class="app-footer" role="contentinfo">
+        <span
+          >Fixed activity scenarios · assumptions disclosed · not an alerting
+          service</span
+        >
+        <span class="brand-mark">EW<span class="dot">.</span></span>
+      </footer>
+    </div>
 
-  <footer class="app-footer" role="contentinfo">
-    <span>Fixed activity scenarios · assumptions disclosed · not an alerting service</span>
-    <span class="brand-mark">EW<span class="dot">.</span></span>
-  </footer>
-
-</div>
-
-<script src="app.js?v=4"></script>
-</body>
+    <script src="app.js?v=4"></script>
+  </body>
 </html>
